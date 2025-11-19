@@ -40,6 +40,13 @@ Desktop.ini
 *.log
 logs/
 
+# Batch processing outputs
+processed/
+batch_errors.log
+batch_processing.log
+batch_metrics.json
+failed_files.csv
+
 # Electron
 out/
 dist/

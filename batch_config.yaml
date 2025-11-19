@@ -1,0 +1,235 @@
+# DeepSeek-OCR Batch Processing Configuration
+# Optimized for Medical Document Processing in Peru
+
+# === GENERAL SETTINGS ===
+general:
+  # Number of images to process in each batch (balances memory vs throughput)
+  batch_size: 10
+
+  # Maximum concurrent GPU processes (RTX 5090 can handle 2-3 with 32GB VRAM)
+  max_concurrent_processes: 2
+
+  # Supported file extensions
+  supported_extensions:
+    - .jpg
+    - .jpeg
+    - .png
+    - .bmp
+    - .tiff
+    - .tif
+    - .pdf  # Will be converted to images per page
+
+  # Skip files larger than this (MB) to prevent OOM errors
+  max_file_size_mb: 50
+
+  # Maintain original folder structure in output directory
+  preserve_folder_structure: true
+
+# === GPU OPTIMIZATION (RTX 5090 32GB VRAM) ===
+gpu:
+  # Target GPU memory usage (MB). RTX 5090 has 32GB = 32768 MB
+  # Leave headroom for system processes
+  target_vram_usage_mb: 28000
+
+  # Monitor GPU memory and reduce batch size if usage exceeds this threshold
+  memory_warning_threshold_percent: 85
+
+  # Use bfloat16 precision (faster, less memory on Ampere/Ada/Blackwell)
+  use_bfloat16: true
+
+  # Enable flash attention v2 if available (2-4x faster)
+  prefer_flash_attention: true
+
+  # Empty CUDA cache between batches to prevent fragmentation
+  clear_cache_between_batches: true
+
+# === OCR MODEL SETTINGS ===
+model:
+  # Model name from Hugging Face
+  model_name: "deepseek-ai/DeepSeek-OCR"
+
+  # Cache directory for downloaded models
+  cache_dir: "./cache/models"
+
+  # OCR prompt type: document, ocr, free, figure, describe
+  # For medical documents, 'document' converts to structured markdown
+  default_prompt_type: "document"
+
+  # Image processing parameters (affects quality vs speed)
+  # Gundam preset: optimal balance for medical documents
+  base_size: 1024      # Internal processing resolution
+  image_size: 640      # Input image size
+  crop_mode: true      # Enable smart cropping for better quality
+
+  # Enable grounding (bounding boxes) for extracting regions
+  enable_grounding: true
+
+# === MEDICAL DOCUMENT PRESETS ===
+# Different configurations for different document types
+medical_presets:
+  historia_clinica:
+    prompt_type: "document"
+    base_size: 1024
+    image_size: 640
+    description: "Historia clínica / Medical history - Full document to markdown"
+
+  laboratorio:
+    prompt_type: "document"
+    base_size: 1024
+    image_size: 768
+    description: "Resultados de laboratorio - Lab results with tables"
+
+  receta:
+    prompt_type: "ocr"
+    base_size: 768
+    image_size: 512
+    description: "Recetas médicas - Prescriptions (handwritten support)"
+
+  radiologia:
+    prompt_type: "figure"
+    base_size: 1280
+    image_size: 1024
+    description: "Informes de radiología - Radiology reports with images"
+
+  generic:
+    prompt_type: "document"
+    base_size: 1024
+    image_size: 640
+    description: "Genérico - Default preset for unknown document types"
+
+# === OUTPUT SETTINGS ===
+output:
+  # Output directory structure
+  output_base_dir: "./processed"
+
+  # Create subdirectories by document type (auto-classified if enabled)
+  organize_by_type: false
+
+  # Output formats
+  formats:
+    # Save OCR text as markdown
+    markdown: true
+
+    # Save structured metadata as JSON
+    json_metadata: true
+
+    # Save annotated image with bounding boxes
+    boxes_image: true
+
+    # Save raw model tokens (useful for debugging)
+    raw_tokens: false
+
+  # Metadata to include in JSON files
+  metadata_fields:
+    - filename
+    - filepath
+    - document_type
+    - processing_time_seconds
+    - model_used
+    - prompt_type
+    - image_dimensions
+    - file_size_bytes
+    - confidence_score
+    - gpu_memory_used_mb
+    - timestamp_utc
+    - char_count
+    - word_count
+
+# === ERROR HANDLING ===
+error_handling:
+  # Skip files that fail processing (don't stop entire batch)
+  skip_failed_files: true
+
+  # Maximum retries per file before skipping
+  max_retries: 2
+
+  # Delay between retries (seconds)
+  retry_delay_seconds: 5
+
+  # Log errors to separate file
+  error_log_file: "batch_errors.log"
+
+  # Save failed file paths to CSV for later review
+  failed_files_list: "failed_files.csv"
+
+  # Continue processing even if GPU runs out of memory (reduces batch size)
+  graceful_oom_recovery: true
+
+# === LOGGING ===
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log file path
+  log_file: "batch_processing.log"
+
+  # Log format with timestamps
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+
+  # Log to console as well as file
+  console_output: true
+
+  # Track detailed metrics
+  track_metrics:
+    - processing_time_per_file
+    - gpu_memory_usage
+    - throughput_files_per_minute
+    - average_confidence_score
+    - error_rate
+
+  # Save metrics summary to JSON
+  metrics_summary_file: "batch_metrics.json"
+
+# === PERFORMANCE TARGETS (RTX 5090 32GB) ===
+performance:
+  # Target throughput (files per minute)
+  target_throughput: 75  # Conservative for 50-100 range
+
+  # Expected processing time per document (seconds)
+  # Varies by document complexity and resolution
+  expected_time_per_doc:
+    small_image: 1.5      # < 1 MB, low resolution
+    medium_image: 3.0     # 1-5 MB, standard resolution
+    large_image: 6.0      # 5-20 MB, high resolution
+    pdf_per_page: 4.0     # Per PDF page
+
+  # Warn if processing is slower than this factor
+  slowdown_warning_factor: 2.0
+
+# === ADVANCED FEATURES (Future) ===
+advanced:
+  # Medical NER (Named Entity Recognition) - Not yet implemented
+  enable_medical_ner: false
+
+  # Document type classification - Not yet implemented
+  enable_classification: false
+
+  # PostgreSQL integration - Not yet implemented
+  enable_database: false
+
+  # Generate embeddings with multilingual-e5-large - Not yet implemented
+  enable_embeddings: false
+
+  # HIPAA audit logging - Not yet implemented
+  enable_audit_logging: false
+
+# === SPANISH MEDICAL TERMINOLOGY ===
+spanish_medical:
+  # Entity types to extract (future feature)
+  entity_types:
+    - diagnosticos        # Diagnósticos
+    - medicamentos        # Medicamentos y dosis
+    - procedimientos      # Procedimientos médicos
+    - signos_vitales      # Presión, temperatura, etc.
+    - laboratorio         # Resultados de laboratorio
+    - fechas_importantes  # Fechas de ingreso, alta, procedimientos
+
+  # Common medical abbreviations (Peru/LatAm)
+  abbreviations:
+    PA: "Presión Arterial"
+    FC: "Frecuencia Cardíaca"
+    FR: "Frecuencia Respiratoria"
+    Temp: "Temperatura"
+    Dx: "Diagnóstico"
+    Tx: "Tratamiento"
+    Hx: "Historia"
