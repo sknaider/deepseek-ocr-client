@@ -32,6 +32,14 @@ except ImportError:
     PYNVML_AVAILABLE = False
     print("Warning: pynvml not available. GPU memory tracking will be limited.")
 
+# Medical entity extraction
+try:
+    from entity_extractor import MedicalEntityExtractor
+    ENTITY_EXTRACTION_AVAILABLE = True
+except ImportError:
+    ENTITY_EXTRACTION_AVAILABLE = False
+    print("Warning: entity_extractor not available. Medical NER disabled.")
+
 
 @dataclass
 class ProcessingResult:
@@ -55,6 +63,7 @@ class ProcessingResult:
     prompt_type: str
     image_dimensions: Optional[Tuple[int, int]]
     file_size_bytes: int
+    extracted_entities: Optional[Dict] = None  # Medical entities (NER)
 
 
 @dataclass
@@ -167,6 +176,16 @@ class BatchProcessor:
         self.processing_lock = Lock()
         self.results: List[ProcessingResult] = []
         self.failed_files: List[Tuple[str, str]] = []  # (filepath, error)
+
+        # Initialize entity extractor if enabled
+        self.entity_extractor = None
+        if ENTITY_EXTRACTION_AVAILABLE and self.config.get('advanced', {}).get('enable_medical_ner', False):
+            try:
+                self.entity_extractor = MedicalEntityExtractor()
+                self.logger.info("Medical entity extractor initialized")
+            except Exception as e:
+                self.logger.warning(f"Could not initialize entity extractor: {e}")
+                self.entity_extractor = None
 
         # Statistics
         self.stats = {
@@ -475,6 +494,26 @@ class BatchProcessor:
             char_count = len(result_text)
             word_count = len(result_text.split())
 
+            # Extract medical entities if enabled
+            extracted_entities = None
+            if self.entity_extractor and result_text:
+                try:
+                    self.logger.debug(f"Extracting medical entities from {filename}...")
+                    extraction_result = self.entity_extractor.extract_entities(result_text)
+                    extracted_entities = self.entity_extractor.to_dict(extraction_result)
+
+                    # Save entities to separate JSON file
+                    entities_path = os.path.join(file_output_dir, 'entities.json')
+                    with open(entities_path, 'w', encoding='utf-8') as f:
+                        json.dump(extracted_entities, f, indent=2, ensure_ascii=False)
+
+                    self.logger.debug(
+                        f"Extracted {extracted_entities['metadata']['total_entities']} entities"
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Entity extraction failed for {filename}: {e}")
+                    extracted_entities = None
+
             # Create metadata
             metadata = {
                 'filename': filename,
@@ -492,7 +531,9 @@ class BatchProcessor:
                 'word_count': word_count,
                 'base_size': base_size,
                 'image_size': image_size,
-                'crop_mode': crop_mode
+                'crop_mode': crop_mode,
+                'entities_extracted': extracted_entities is not None,
+                'entity_count': extracted_entities['metadata']['total_entities'] if extracted_entities else 0
             }
 
             # Save metadata JSON
@@ -525,7 +566,8 @@ class BatchProcessor:
                 model_used=self.config['model']['model_name'],
                 prompt_type=prompt_type,
                 image_dimensions=img_dimensions,
-                file_size_bytes=file_size
+                file_size_bytes=file_size,
+                extracted_entities=extracted_entities
             )
 
         except Exception as e:
@@ -552,7 +594,8 @@ class BatchProcessor:
                 model_used=self.config['model']['model_name'],
                 prompt_type=prompt_type,
                 image_dimensions=img_dimensions if 'img_dimensions' in locals() else None,
-                file_size_bytes=file_size if 'file_size' in locals() else 0
+                file_size_bytes=file_size if 'file_size' in locals() else 0,
+                extracted_entities=None
             )
 
     def process_batch(

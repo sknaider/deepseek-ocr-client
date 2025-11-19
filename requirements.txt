@@ -17,3 +17,8 @@ hf-xet>=0.1.0
 # Batch processing dependencies
 pyyaml>=6.0.0           # YAML config file parsing
 pynvml>=11.5.0          # GPU memory monitoring (NVIDIA Management Library)
+
+# Medical entity extraction (NER)
+spacy>=3.7.0            # Spanish NLP and NER
+# After installing spacy, download Spanish model:
+# python -m spacy download es_core_news_md

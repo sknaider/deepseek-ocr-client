@@ -1,0 +1,396 @@
+# Medical Named Entity Recognition (NER) Configuration
+# Optimized for Spanish medical documents in Peru/LatAm
+
+# === ENTITY TYPES ===
+entity_types:
+  diagnosticos:
+    enabled: true
+    description: "Diagnósticos médicos, enfermedades, condiciones"
+    examples:
+      - "Diabetes Mellitus Tipo 2"
+      - "Hipertensión Arterial"
+      - "Insuficiencia Renal Crónica"
+      - "Neumonía Adquirida en la Comunidad"
+    confidence_threshold: 0.6
+
+  medicamentos:
+    enabled: true
+    description: "Medicamentos con dosis y frecuencia"
+    examples:
+      - "Metformina 850mg cada 12 horas"
+      - "Losartán 50mg 1 vez al día"
+      - "Amoxicilina 500mg cada 8 horas por 7 días"
+    confidence_threshold: 0.7
+    extract_components:
+      - nombre          # Drug name
+      - dosis           # Dose (e.g., "850mg")
+      - frecuencia      # Frequency (e.g., "cada 12 horas")
+      - duracion        # Duration (e.g., "por 7 días")
+      - via             # Route (e.g., "oral", "intravenoso")
+
+  procedimientos:
+    enabled: true
+    description: "Procedimientos médicos realizados"
+    examples:
+      - "Cirugía de revascularización coronaria"
+      - "Tomografía computarizada de tórax"
+      - "Endoscopia digestiva alta"
+      - "Biopsia de médula ósea"
+    confidence_threshold: 0.6
+
+  fechas_importantes:
+    enabled: true
+    description: "Fechas de eventos médicos"
+    examples:
+      - "Fecha de ingreso: 15/11/2025"
+      - "Alta médica: 20/11/2025"
+      - "Cirugía programada: 18/11/2025"
+    confidence_threshold: 0.8
+    extract_types:
+      - ingreso         # Admission date
+      - alta            # Discharge date
+      - cirugia         # Surgery date
+      - procedimiento   # Procedure date
+      - diagnostico     # Diagnosis date
+
+  signos_vitales:
+    enabled: true
+    description: "Signos vitales con valores y unidades"
+    examples:
+      - "PA: 140/90 mmHg"
+      - "FC: 85 lpm"
+      - "Temp: 36.5°C"
+      - "FR: 18 rpm"
+      - "SpO2: 98%"
+    confidence_threshold: 0.9
+    extract_types:
+      - presion_arterial    # Blood pressure (PA)
+      - frecuencia_cardiaca # Heart rate (FC)
+      - temperatura         # Temperature (Temp)
+      - frecuencia_respiratoria # Respiratory rate (FR)
+      - saturacion_oxigeno  # Oxygen saturation (SpO2)
+      - glucosa             # Blood glucose
+      - peso                # Weight
+      - talla               # Height
+      - imc                 # BMI
+
+  resultados_laboratorio:
+    enabled: true
+    description: "Resultados de laboratorio con valores y rangos"
+    examples:
+      - "Hemoglobina: 13.5 g/dL (12-16)"
+      - "Glucosa: 110 mg/dL (70-100)"
+      - "Creatinina: 1.2 mg/dL (0.6-1.2)"
+    confidence_threshold: 0.8
+    extract_components:
+      - nombre          # Test name
+      - valor           # Value
+      - unidad          # Unit
+      - rango_normal    # Reference range
+
+# === REGEX PATTERNS ===
+patterns:
+  # Medication dose patterns
+  dosis:
+    - pattern: '\b(\d+(?:\.\d+)?)\s*(mg|g|ml|mcg|UI|u|unidades?)\b'
+      examples: ["500mg", "1.5g", "10ml", "100mcg", "1000UI"]
+
+  # Frequency patterns
+  frecuencia:
+    - pattern: '\b(?:cada|c/)\s*(\d+)\s*(horas?|hrs?|h)\b'
+      examples: ["cada 8 horas", "c/12hrs", "cada 6h"]
+    - pattern: '\b(\d+)\s*(?:vez|veces)\s*(?:al|por)\s*d[ií]a\b'
+      examples: ["1 vez al día", "3 veces al día", "2 veces por día"]
+    - pattern: '\b(?:cada|c/)\s*(\d+)\s*d[ií]as?\b'
+      examples: ["cada 3 días", "c/2días"]
+
+  # Duration patterns
+  duracion:
+    - pattern: '\b(?:por|durante|x)\s*(\d+)\s*(d[ií]as?|semanas?|meses?)\b'
+      examples: ["por 7 días", "durante 2 semanas", "x 3 meses"]
+
+  # Blood pressure patterns
+  presion_arterial:
+    - pattern: '\b(?:PA|Presión|P\.A\.?):?\s*(\d{2,3})\s*/\s*(\d{2,3})\s*(?:mmHg)?\b'
+      examples: ["PA: 140/90 mmHg", "Presión 120/80", "P.A. 130/85"]
+    - pattern: '\b(\d{2,3})\s*/\s*(\d{2,3})\s*mmHg\b'
+      examples: ["140/90 mmHg", "120/80 mmHg"]
+
+  # Heart rate patterns
+  frecuencia_cardiaca:
+    - pattern: '\b(?:FC|F\.C\.?):?\s*(\d{2,3})\s*(?:lpm|lat/min|x[\'"]?)?\b'
+      examples: ["FC: 85 lpm", "F.C. 72", "FC 90 x'"]
+
+  # Temperature patterns
+  temperatura:
+    - pattern: '\b(?:Temp|T|Temperatura):?\s*(\d{2}\.\d{1,2})\s*°?C\b'
+      examples: ["Temp: 36.5°C", "T 37.2C", "Temperatura 38.5°C"]
+    - pattern: '\b(\d{2}\.\d{1,2})\s*°C\b'
+      examples: ["36.5°C", "37.8°C"]
+
+  # Respiratory rate patterns
+  frecuencia_respiratoria:
+    - pattern: '\b(?:FR|F\.R\.?):?\s*(\d{2})\s*(?:rpm|resp/min)?\b'
+      examples: ["FR: 18 rpm", "F.R. 16", "FR 20 resp/min"]
+
+  # Oxygen saturation patterns
+  saturacion_oxigeno:
+    - pattern: '\b(?:SpO2|SatO2|Sat\.?\s*O2):?\s*(\d{2,3})\s*%\b'
+      examples: ["SpO2: 98%", "SatO2 95%", "Sat. O2 97%"]
+
+  # Glucose patterns
+  glucosa:
+    - pattern: '\b(?:Glucosa|Glicemia):?\s*(\d{2,3})\s*mg/dL\b'
+      examples: ["Glucosa: 110 mg/dL", "Glicemia 95 mg/dL"]
+
+  # Lab result patterns (general)
+  resultado_lab:
+    - pattern: '\b([A-Za-zÁ-úÑñ\s]+):\s*(\d+(?:\.\d+)?)\s*([a-zA-Z/%]+(?:/[a-zA-Z]+)?)\s*(?:\(([0-9.-]+)\s*-\s*([0-9.]+)\))?\b'
+      examples: ["Hemoglobina: 13.5 g/dL (12-16)", "Creatinina: 1.2 mg/dL"]
+
+  # Date patterns (dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy)
+  fecha:
+    - pattern: '\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\b'
+      examples: ["15/11/2025", "15-11-2025", "15.11.25"]
+    - pattern: '\b(\d{1,2})\s+(?:de\s+)?([a-z]{3,10})\s+(?:de\s+)?(\d{2,4})\b'
+      examples: ["15 de noviembre de 2025", "15 noviembre 2025"]
+
+# === ABBREVIATIONS (Peru/LatAm Medical) ===
+abbreviations:
+  # General
+  PA: "Presión Arterial"
+  FC: "Frecuencia Cardíaca"
+  FR: "Frecuencia Respiratoria"
+  Temp: "Temperatura"
+  T: "Temperatura"
+
+  # Diagnosis
+  DM: "Diabetes Mellitus"
+  DM2: "Diabetes Mellitus Tipo 2"
+  HTA: "Hipertensión Arterial"
+  IRC: "Insuficiencia Renal Crónica"
+  IAM: "Infarto Agudo de Miocardio"
+  ACV: "Accidente Cerebrovascular"
+  EPOC: "Enfermedad Pulmonar Obstructiva Crónica"
+  ICC: "Insuficiencia Cardíaca Congestiva"
+
+  # Medical terms
+  Dx: "Diagnóstico"
+  Tx: "Tratamiento"
+  Hx: "Historia"
+  Ex: "Examen"
+  Qx: "Cirugía"
+
+  # Lab tests
+  Hb: "Hemoglobina"
+  Hto: "Hematocrito"
+  GB: "Glóbulos Blancos"
+  GR: "Glóbulos Rojos"
+  Plt: "Plaquetas"
+  Glu: "Glucosa"
+  BUN: "Nitrógeno Ureico"
+  Cr: "Creatinina"
+  Na: "Sodio"
+  K: "Potasio"
+
+  # Routes
+  VO: "Vía Oral"
+  IV: "Intravenoso"
+  IM: "Intramuscular"
+  SC: "Subcutáneo"
+
+  # Frequency
+  QD: "Cada día"
+  BID: "Dos veces al día"
+  TID: "Tres veces al día"
+  QID: "Cuatro veces al día"
+  PRN: "Según necesidad"
+
+  # Units
+  lpm: "latidos por minuto"
+  rpm: "respiraciones por minuto"
+
+# === MEDICAL TERMINOLOGY (Common Terms) ===
+medical_terms:
+  enfermedades_cronicas:
+    - "Diabetes Mellitus"
+    - "Hipertensión Arterial"
+    - "Insuficiencia Renal"
+    - "Enfermedad Pulmonar Obstructiva Crónica"
+    - "Insuficiencia Cardíaca"
+    - "Cirrosis Hepática"
+    - "Enfermedad de Alzheimer"
+    - "Artritis Reumatoide"
+
+  enfermedades_agudas:
+    - "Neumonía"
+    - "Infarto Agudo de Miocardio"
+    - "Accidente Cerebrovascular"
+    - "Apendicitis Aguda"
+    - "Pancreatitis Aguda"
+    - "Colecistitis Aguda"
+
+  medicamentos_comunes:
+    - "Metformina"
+    - "Losartán"
+    - "Enalapril"
+    - "Atorvastatina"
+    - "Simvastatina"
+    - "Omeprazol"
+    - "Paracetamol"
+    - "Ibuprofeno"
+    - "Amoxicilina"
+    - "Azitromicina"
+    - "Insulina"
+    - "Levotiroxina"
+    - "Furosemida"
+    - "Espironolactona"
+    - "Amlodipino"
+
+# === NER MODEL CONFIGURATION ===
+model:
+  # Use spaCy Spanish model
+  spacy_model: "es_core_news_md"  # Medium Spanish model
+  # Alternative: "es_core_news_lg" for large model (better accuracy, more memory)
+
+  # Use transformers model (optional, for better medical entity recognition)
+  transformers_model: null  # Can use "PlanTL-GOB-ES/roberta-base-biomedical-es" for Spanish medical
+
+  # Enable rule-based matching
+  use_rules: true
+
+  # Enable pattern matching
+  use_patterns: true
+
+  # Combine NER + patterns
+  hybrid_mode: true
+
+# === EXTRACTION SETTINGS ===
+extraction:
+  # Minimum confidence score to include entity
+  min_confidence: 0.5
+
+  # Maximum entities per type (prevent over-extraction)
+  max_entities_per_type: 50
+
+  # Include entity positions in original text
+  include_positions: true
+
+  # Include surrounding context (words before/after entity)
+  include_context: true
+  context_window: 5  # words before/after
+
+  # Validate extracted entities
+  validate_entities: true
+
+  # Normalize entity text (lowercase, remove accents for matching)
+  normalize: false  # Keep original for medical terms
+
+  # Merge overlapping entities
+  merge_overlapping: true
+
+# === VALIDATION RULES ===
+validation:
+  # Dose validation
+  dosis:
+    min_value: 0.01
+    max_value: 10000  # mg
+    valid_units: ["mg", "g", "ml", "mcg", "UI", "u", "unidades"]
+
+  # Vital signs ranges
+  signos_vitales:
+    presion_arterial_sistolica:
+      min: 60
+      max: 250
+    presion_arterial_diastolica:
+      min: 40
+      max: 150
+    frecuencia_cardiaca:
+      min: 30
+      max: 200
+    temperatura:
+      min: 34.0
+      max: 42.0
+    frecuencia_respiratoria:
+      min: 8
+      max: 60
+    saturacion_oxigeno:
+      min: 50
+      max: 100
+
+# === OUTPUT FORMAT ===
+output:
+  # JSON structure for extracted entities
+  format: "structured"  # structured, flat, nested
+
+  # Include metadata
+  include_metadata: true
+  metadata_fields:
+    - extraction_timestamp
+    - confidence_scores
+    - entity_positions
+    - validation_status
+
+  # Group entities by type
+  group_by_type: true
+
+  # Sort entities by confidence
+  sort_by_confidence: true
+
+# === PERFORMANCE ===
+performance:
+  # Batch size for processing multiple documents
+  batch_size: 10
+
+  # Use GPU for transformers model
+  use_gpu: true
+
+  # Number of threads for spaCy pipeline
+  n_threads: 4
+
+  # Enable caching for repeated extractions
+  enable_cache: true
+
+# === SPANISH LANGUAGE SPECIFIC ===
+spanish:
+  # Month names for date parsing
+  meses:
+    enero: 1
+    febrero: 2
+    marzo: 3
+    abril: 4
+    mayo: 5
+    junio: 6
+    julio: 7
+    agosto: 8
+    septiembre: 9
+    setiembre: 9  # Common variant in Peru
+    octubre: 10
+    noviembre: 11
+    diciembre: 12
+
+  # Stop words to filter out
+  stop_words:
+    - "el"
+    - "la"
+    - "de"
+    - "del"
+    - "al"
+    - "con"
+    - "sin"
+    - "por"
+    - "para"
+
+# === ADVANCED FEATURES (Future) ===
+advanced:
+  # Extract relationships between entities
+  extract_relationships: false
+
+  # Resolve entity coreferences (e.g., "el paciente" -> name)
+  resolve_coreference: false
+
+  # Link to medical ontologies (SNOMED-CT, ICD-10)
+  link_ontologies: false
+
+  # Infer missing information
+  infer_missing: false

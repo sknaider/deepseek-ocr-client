@@ -196,10 +196,12 @@ performance:
   # Warn if processing is slower than this factor
   slowdown_warning_factor: 2.0
 
-# === ADVANCED FEATURES (Future) ===
+# === ADVANCED FEATURES ===
 advanced:
-  # Medical NER (Named Entity Recognition) - Not yet implemented
-  enable_medical_ner: false
+  # Medical NER (Named Entity Recognition) - ✅ IMPLEMENTED
+  # Extracts diagnósticos, medicamentos, signos vitales, laboratorio, etc.
+  enable_medical_ner: true  # Set to true to enable entity extraction
+  medical_ner_config: "medical_ner_config.yaml"  # Config file for NER
 
   # Document type classification - Not yet implemented
   enable_classification: false
