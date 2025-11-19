@@ -206,14 +206,37 @@ advanced:
   # Document type classification - Not yet implemented
   enable_classification: false
 
-  # PostgreSQL integration - Not yet implemented
-  enable_database: false
+  # PostgreSQL integration - ✅ IMPLEMENTED
+  # Store documents in database with semantic search and audit logging
+  enable_database: true  # Set to true to enable database storage
+  enable_embeddings: true  # Generate embeddings for semantic search
+  enable_audit_logging: true  # HIPAA-compliant audit trail
 
-  # Generate embeddings with multilingual-e5-large - Not yet implemented
-  enable_embeddings: false
+# === DATABASE CONFIGURATION ===
+# PostgreSQL with pgvector for semantic search
+database:
+  # Connection settings (use environment variables for security)
+  # Set: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+  host: "localhost"  # Override with DB_HOST env var
+  port: 5432         # Override with DB_PORT env var
+  database: "medical_records"  # Override with DB_NAME env var
+  # user and password MUST be set via environment variables
 
-  # HIPAA audit logging - Not yet implemented
-  enable_audit_logging: false
+  # Connection pool settings
+  pool_size: 10      # Maximum connections in pool
+  pool_timeout: 30   # Seconds to wait for connection
+
+  # Embedding generation
+  embedding_model: "intfloat/multilingual-e5-large-instruct"
+  embedding_batch_size: 32  # Batch size for embedding generation
+  embedding_dimensions: 1024
+
+  # Semantic search settings
+  similarity_threshold: 0.7  # Minimum similarity for search results
+  search_limit: 10           # Default number of results
+
+  # User ID for audit logging (optional, can be set per-operation)
+  default_user_id: null
 
 # === SPANISH MEDICAL TERMINOLOGY ===
 spanish_medical:

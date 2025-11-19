@@ -22,3 +22,10 @@ pynvml>=11.5.0          # GPU memory monitoring (NVIDIA Management Library)
 spacy>=3.7.0            # Spanish NLP and NER
 # After installing spacy, download Spanish model:
 # python -m spacy download es_core_news_md
+
+# PostgreSQL database with pgvector
+psycopg2-binary>=2.9.0  # PostgreSQL adapter
+# Alternative: psycopg2>=2.9.0 (requires PostgreSQL dev libraries)
+
+# Note: transformers already included above for DeepSeek-OCR
+# Used for embedding generation with multilingual-e5-large-instruct
